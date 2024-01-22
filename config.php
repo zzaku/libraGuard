@@ -4,10 +4,10 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 
-$host = 'sql108.infinityfree.com';
-$dbname = 'if0_35839782_subject';
-$username = 'if0_35839782';
-$password = 'gnVadx7Y4R4zSA';
+$host = 'Adresse de la base de donnée';
+$dbname = 'Nom de la base de donnée';
+$username = 'Nom de l\'utilisateur';
+$password = 'mot de passe utilisateur';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
@@ -15,4 +15,3 @@ try {
 } catch (PDOException $e) {
     die("Erreur de connexion à la base de données : " . $e->getMessage());
 }
-?>
