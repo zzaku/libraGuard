@@ -1,125 +1,114 @@
+/* Variables globales */
+:root {
+    --primary-color: #007BFF;
+    --primary-hover: #0056b3;
+    --background-color: #f4f4f4;
+    --text-color: #333;
+    --border-color: #ddd;
+}
+
+/* Styles de base */
 body {
     font-family: 'Roboto', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #FFFFFF;
-    color: #6C757D;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding-bottom: 60px;
 }
+
+/* Header */
 header {
-    background-color: #007BFF;
+    background-color: var(--primary-color);
     color: white;
     padding: 20px;
     text-align: center;
 }
+
 h1 {
     margin: 0;
     font-size: 36px;
 }
 
-/* Ajoutez ceci à votre fichier CSS */
-
-.book-image {
-    max-width: 100px;
-    height: auto; /* Cela permet de conserver les proportions de l'image */
-    display: block; /* Assurez-vous que l'image est affichée comme un bloc */
-    margin: auto; /* Centrez l'image horizontalement */
-}
-
+/* Container */
 .container {
-    max-width: 800px;
+    width: 80%;
+    max-width: 1200px;
     margin: 20px auto;
     padding: 20px;
-
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-a {
-    color: #007BFF;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+/* Tableaux */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-}
-table, th, td {
-    border: 1px solid #ddd;
-}
-th, td {
-    padding: 10px;
-    text-align: left;
-}
-th {
-    background-color: #007BFF;
-    color: white; 
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Styles pour les boutons */
-button {
-    background-color: #007BFF;
+th, td {
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: var(--primary-color);
     color: white;
+}
+
+/* Images */
+.book-image {
+    max-width: 100px;
+    height: auto;
+    display: block;
+    margin: auto;
+}
+
+/* Boutons et liens */
+.btn {
+    display: inline-block;
     padding: 10px 20px;
+    margin: 10px 5px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    font-size: 16px;
+    text-decoration: none;
+    color: white;
+    background-color: var(--primary-color);
 }
 
-/* Styles pour les formulaires */
+.btn:hover {
+    background-color: var(--primary-hover);
+}
+
+/* Formulaires */
 form {
-    margin-top: 20px;
+    max-width: 300px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Styles pour les titres */
-h2 {
-    font-size: 24px;
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+/* Messages */
+.error-message {
+    color: #FF0000;
     margin: 10px 0;
 }
 
-/* Styles pour les messages d'erreur */
-.error-message {
-    color: #FF0000;
-}
-
-/* Styles pour les liens */
-a {
-    text-decoration: none;
-    font-weight: bold;
-}
-
-/* Styles pour les tables */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-table, th, td {
-    border: 1px solid #ddd;
-}
-
-th, td {
-    padding: 10px;
-    text-align: left;
-}
-body {
-    font-family: 'Roboto', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #FFFFFF;
-    color: #6C757D;
-}
-
-header {
-    background-color: #007BFF;
-    color: white;
-    padding: 20px;
-    text-align: center;
-}
-
-h1 {
-    margin: 0;
-    font-size: 36px;
-}
-
+/* Layout */
 .wrapper {
     display: flex;
 }
@@ -146,24 +135,32 @@ h1 {
     padding: 20px;
 }
 
+/* Footer */
 footer {
-    background-color: #007BFF;
+    background-color: var(--primary-color);
     color: white;
     text-align: center;
-    padding: 10px;
+    padding: 15px 0;
+    position: fixed;
     bottom: 0;
     width: 100%;
-    position: sticky;
-}
-/* ... Styles précédents ... */
-
-#content {
-    flex-grow: 1;
-    padding: 20px;
+    z-index: 1000;
 }
 
+footer .container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+}
 
+footer p {
+    margin: 0;
+    padding: 0;
+}
 
+/* Statistiques */
 .statistic {
     background-color: #f0f0f0;
     padding: 20px;
@@ -182,61 +179,101 @@ footer {
     margin: 10px 0;
 }
 
-/* Ajoutez ces styles dans votre fichier css/style.css */
+/* Media Queries */
+@media (max-width: 768px) {
+    .container {
+        width: 100%;
+        padding: 10px;
+    }
 
-body {
-    font-family: 'Roboto', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
+    table {
+        font-size: 14px;
+    }
+
+    .book-image {
+        max-width: 50px;
+    }
+
+    .btn {
+        display: block;
+        width: 100%;
+        margin: 10px 0;
+    }
 }
 
-header {
-    background-color: #007BFF;
-    color: white;
-    padding: 20px;
-    text-align: center;
-}
-
-h1 {
-    margin: 0;
-    font-size: 24px;
-}
-
-form {
-    max-width: 300px;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: white;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-input {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    box-sizing: border-box;
-}
-
-button {
-    background-color: #007BFF;
-    color: white;
-    padding: 10px 20px;
-    border: none;
+/* Messages */
+.message {
+    padding: 15px;
+    margin: 20px 0;
     border-radius: 5px;
-    cursor: pointer;
-    width: 100%;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-p {
-
-    margin-top: 10px;
     text-align: center;
+}
+
+.message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Actions dans les tableaux */
+.actions {
+    white-space: nowrap;
+}
+
+.actions .btn {
+    margin: 2px;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* CAPTCHA */
+.captcha-group {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.captcha-image {
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    background: #f8f9fa;
+}
+
+.captcha-group input {
+    width: 200px;
+    text-align: center;
+    letter-spacing: 2px;
+    font-size: 16px;
+    text-transform: uppercase;
+}
+
+.captcha-text {
+    font-family: 'Courier New', monospace;
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+    margin: 10px 0;
+    user-select: none;
 }
 
 

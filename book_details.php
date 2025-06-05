@@ -1,84 +1,95 @@
 <?php
-require('config.php');
+require_once('config.php');
+require_once('includes/functions.php');
 
-if (isset($_GET['id'])) {
-    $bookId = $_GET['id'];
-
-    // Récupérez les détails du livre depuis la base de données en utilisant $bookId
-    $query = "SELECT * FROM livres WHERE id = :id";
-    $stmt = $pdo->prepare($query);
-    $stmt->execute(array(':id' => $bookId));
-
-    if ($stmt->rowCount() == 1) {
-        $book = $stmt->fetch();
-    } else {
-        // Livre non trouvé, gérer l'erreur ici
-    }
-} else {
-    // ID de livre non spécifié dans l'URL, gérer l'erreur ici
+if (!isset($_GET['id'])) {
+    rediriger('books.php', 'ID du livre non spécifié.');
 }
+
+$livre_id = (int)$_GET['id'];
+
+try {
+    $stmt = $pdo->prepare("SELECT * FROM livres WHERE id = ?");
+    $stmt->execute([$livre_id]);
+    $livre = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$livre) {
+        rediriger('books.php', 'Livre non trouvé.');
+    }
+} catch (PDOException $e) {
+    rediriger('books.php', 'Erreur lors de la récupération du livre.');
+}
+
+$page_title = htmlspecialchars($livre['titre']);
+include 'includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Détails du Livre</title>
-    <link rel="stylesheet" type="text/css" href="css/style.css">
-    <style>
-         .book-image {
-            max-width: 30%;
-            height: auto;
-            display: block;
-            margin: 0 auto; /* Pour centrer l'image */
-        }
-        </style>
-</head>
-<body>
-    <header>
-        <h1>Détails du Livre</h1>
-    </header>
-    <div class="container">
-        <div class="details">
-            <?php if (isset($book)) : ?>
-                <h3><?= htmlspecialchars($book['titre']); ?></h3>
-
-                <?php echo '<img class="book-image" src="' . htmlspecialchars($book['photo_url']) . '" alt="' . htmlspecialchars($book['titre']) . '">';?>
-                <p>Auteur : <?= htmlspecialchars($book['auteur']); ?></p>
-                <p>Année de publication : <?= htmlspecialchars($book['date_publication']); ?></p>
-                <p>ISBN : <?= htmlspecialchars($book['isbn']); ?></p>
-                <!-- Ajoutez l'URL de l'image ici -->
-                <p>URL de l'image : <?= htmlspecialchars($book['photo_url']); ?></p>
-                <!-- Autres détails du livre à afficher ici -->
-            <?php else : ?>
-                <p>Livre non trouvé</p>
-            <?php endif; ?>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <?php if ($livre['photo_url']): ?>
+                        <img src="<?php echo htmlspecialchars($livre['photo_url']); ?>" 
+                             class="img-fluid rounded" 
+                             alt="Couverture du livre">
+                    <?php else: ?>
+                        <div class="alert alert-secondary">
+                            Pas d'image disponible
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
-        <div class="back-button">
-    <button onclick="window.location.href = 'books.php'">Retour à la liste des livres</button>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="card-title"><?php echo htmlspecialchars($livre['titre']); ?></h1>
+                    <h6 class="card-subtitle mb-3 text-muted">par <?php echo htmlspecialchars($livre['auteur']); ?></h6>
 
-    <?php
-    // Ajoutez une vérification du rôle de l'utilisateur
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
-        // Si l'utilisateur est un administrateur, affichez les boutons "Modifier" et "Supprimer"
-        echo '<button onclick="window.location.href = \'edit_book.php?book_id=' . $bookId . '\'">Modifier le livre</button>';
-        echo '<button onclick="showDeleteConfirmation(' . $bookId . ')">Supprimer le livre</button>';
-    }
-    ?>
+                    <div class="mb-3">
+                        <p><strong>ISBN :</strong> <?php echo htmlspecialchars($livre['isbn']); ?></p>
+                        <p><strong>Date de publication :</strong> 
+                            <?php echo $livre['date_publication'] ? date('d/m/Y', strtotime($livre['date_publication'])) : 'Non spécifiée'; ?>
+                        </p>
+                        <p><strong>Statut :</strong> 
+                            <span class="badge bg-<?php 
+                                echo $livre['statut'] === 'disponible' ? 'success' : 
+                                    ($livre['statut'] === 'emprunté' ? 'warning' : 'danger'); 
+                            ?>">
+                                <?php echo htmlspecialchars($livre['statut']); ?>
+                            </span>
+                        </p>
+                    </div>
 
+                    <?php if ($livre['description']): ?>
+                        <div class="mb-3">
+                            <h3>Description</h3>
+                            <p class="card-text"><?php echo nl2br(htmlspecialchars($livre['description'])); ?></p>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="d-flex gap-2">
+                        <?php if ($livre['statut'] === 'disponible' && estConnecte()): ?>
+                            <a href="emprunter.php?id=<?php echo $livre['id']; ?>" 
+                               class="btn btn-primary">Emprunter ce livre</a>
+                        <?php endif; ?>
+                        
+                        <?php if (estAdmin()): ?>
+                            <a href="edit_book.php?id=<?php echo $livre['id']; ?>" 
+                               class="btn btn-warning">Modifier</a>
+                            <a href="delete_book.php?id=<?php echo $livre['id']; ?>" 
+                               class="btn btn-danger">Supprimer</a>
+                        <?php endif; ?>
+                        
+                        <a href="books.php" class="btn btn-secondary">Retour à la liste</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-    </div>
-</body>
-<script>
-    function showDeleteConfirmation(bookId) {
-        if (confirm("Êtes-vous sûr de vouloir supprimer ce livre ?")) {
-            // Si l'utilisateur confirme la suppression, redirigez-le vers la page de suppression avec l'ID du livre.
-            window.location.href = "delete_book.php?book_id=" + bookId;
-        } else {
-            // Si l'utilisateur annule la suppression, ne faites rien.
-        }
-    }
-</script>
-
-</html>
+<?php include 'includes/footer.php'; ?>
 

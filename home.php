@@ -1,74 +1,72 @@
 <?php
     require_once('config.php');
+    require_once('includes/functions.php');
 
 
-// Récupérer le nombre total de livres
 $queryTotalBooks = "SELECT COUNT(*) as total_books FROM livres";
 $stmtTotalBooks = $pdo->prepare($queryTotalBooks);
 $stmtTotalBooks->execute();
 $resultTotalBooks = $stmtTotalBooks->fetch(PDO::FETCH_ASSOC);
+
+$totalUsers = getNombreUtilisateurs($pdo);
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Accueil</title>
+    <title>Accueil - LibraGuard</title>
     <link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
-<header>
-        <h1>Librairie XYZ</h1>
+    <header>
+        <h1>LibraGuard</h1>
     </header>
 
-<div class="wrapper">
-        <!-- Sidebar -->
-       <nav id="sidebar">
-    <ul>
-        <?php if (isset($_SESSION['user'])) : ?>
-            <li>Bonjour <?= $_SESSION['prenom']; ?></li>
-            <li><a href="books.php">Voir la liste des livres</a></li>
-            <li><a href="profile.php">Mon profil</a></li>
-            <li><a href="logout.php">Deconnexion</a></li>
-        <?php else : ?>
-            <li><a href="login.php">Connexion</a></li>
-            <li><a href="register.php">Inscription</a></li>
-        <?php endif; ?>
-    </ul>
-</nav>
-        
+    <div class="wrapper">
+        <nav id="sidebar">
+            <ul>
+                <?php if (estConnecte()) : ?>
+                    <li>Bonjour <?php echo htmlspecialchars($_SESSION['user_prenom']); ?></li>
+                    <li><a href="books.php">Voir la liste des livres</a></li>
+                    <li><a href="profile.php">Mon profil</a></li>
+                    <?php if (estAdmin()) : ?>
+                        <li><a href="admin.php">Administration</a></li>
+                    <?php endif; ?>
+                    <li><a href="logout.php">Déconnexion</a></li>
+                <?php else : ?>
+                    <li><a href="login.php">Connexion</a></li>
+                    <li><a href="register.php">Inscription</a></li>
+                <?php endif; ?>
+            </ul>
+        </nav>
 
-        <!-- Page Content -->
         <div id="content">
             <div class="container">
+                <h1>Tableau de bord</h1>
                 
-                <!-- Votre contenu principal va ici -->
-                <div id="content">
-                <h1>Dashboard</h1>
-    <div class="container">
-        
-    <div class="statistic">
-        
-            <h3>Total des Livres</h3>
-            <p><?php echo $resultTotalBooks['total_books']; ?></p>
-        </div>
+                <div class="statistics-grid">
+                    <div class="statistic">
+                        <h3>Total des Livres</h3>
+                        <p><?php echo $resultTotalBooks['total_books']; ?></p>
+                    </div>
 
+                    <div class="statistic">
+                        <h3>Utilisateurs Enregistrés</h3>
+                        <p><?php echo $totalUsers; ?></p>
+                    </div>
+                </div>
 
-        <div class="statistic">
-            <h3>Utilisateurs Enregistrés</h3>
-            <p><?php echo "Nombre d'utilisateur enregistré" ?></p>
-        </div>
-
-        <!-- ... Autres statistiques ... -->
-    </div>
-</div>
+                <?php if (!estConnecte()) : ?>
+                    <div class="welcome-message">
+                        <h2>Bienvenue sur LibraGuard</h2>
+                        <p>Connectez-vous ou créez un compte pour accéder à toutes les fonctionnalités.</p>
+                        <div class="cta-buttons">
+                            <a href="login.php" class="btn btn-primary">Se connecter</a>
+                            <a href="register.php" class="btn btn-primary">S'inscrire</a>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
-
-    <!-- Footer -->
-    <footer>
-    <div class="container">
-        <p>&copy; <?= date("Y"); ?> Librairie XYZ</p>
-    </div>
-</footer>
 </body>
 </html>

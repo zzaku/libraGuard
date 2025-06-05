@@ -1,89 +1,208 @@
 <?php
 require_once('config.php');
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+require_once('includes/functions.php');
+
+// Vérifier si l'utilisateur est connecté et a le rôle approprié
+if (!estConnecte() || !estAdmin()) {
+    rediriger('login.php', 'Vous devez être administrateur pour accéder à cette page.', 'error');
 }
 
-// Vérifiez si l'utilisateur est authentifié et a le rôle approprié (par exemple, "admin" ou "gestionnaire") pour accéder à cette fonctionnalité.
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: login.php');
-    exit();
+$message = '';
+$type_message = '';
+$livre = null;
+
+// Vérifier si un ID de livre est fourni
+if (!isset($_GET['id'])) {
+    rediriger('books.php', 'ID du livre non spécifié.', 'error');
 }
 
-// Assurez-vous que l'ID du livre que vous souhaitez modifier est passé en tant que paramètre (par exemple, dans l'URL).
-if (!isset($_GET['book_id'])) {
-    header('Location: books.php'); // Redirigez l'utilisateur vers la liste des livres ou une autre page appropriée.
-    exit();
+$id = (int)$_GET['id'];
+
+// Récupérer les informations du livre
+try {
+    $query = "SELECT * FROM livres WHERE id = :id";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([':id' => $id]);
+    $livre = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$livre) {
+        rediriger('books.php', 'Livre non trouvé.', 'error');
+    }
+} catch (PDOException $e) {
+    rediriger('books.php', 'Erreur lors de la récupération du livre.', 'error');
 }
 
-$book_id = $_GET['book_id'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Vérification du CAPTCHA
+    if (!isset($_POST['captcha']) || !verifierCaptcha($_POST['captcha'])) {
+        $message = 'Le CAPTCHA est incorrect.';
+        $type_message = 'error';
+    } else {
+        // Récupération et nettoyage des données
+        $titre = nettoyer($_POST['titre']);
+        $auteur = nettoyer($_POST['auteur']);
+        $isbn = nettoyer($_POST['isbn']);
+        $date_publication = nettoyer($_POST['date_publication']);
+        $description = nettoyer($_POST['description']);
+        $statut = nettoyer($_POST['statut']);
 
-// Récupérez les détails du livre à partir de la base de données pour les afficher dans le formulaire de modification.
-$query = "SELECT * FROM livres WHERE id = :book_id";
-$stmt = $pdo->prepare($query);
-$stmt->execute(array(':book_id' => $book_id));
-$book = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Validation des données
+        if (empty($titre) || empty($auteur) || empty($isbn)) {
+            $message = 'Tous les champs obligatoires doivent être remplis.';
+            $type_message = 'error';
+        } else {
+            try {
+                // Gestion de l'upload d'image
+                $photo_url = $livre['photo_url']; // Garder l'ancienne image par défaut
+                if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+                    $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+                    $filename = $_FILES['photo']['name'];
+                    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    
+                    if (in_array($ext, $allowed)) {
+                        $new_filename = uniqid() . '.' . $ext;
+                        $upload_path = 'image/books/' . $new_filename;
+                        
+                        if (move_uploaded_file($_FILES['photo']['tmp_name'], $upload_path)) {
+                            // Supprimer l'ancienne image si elle existe
+                            if (!empty($livre['photo_url']) && file_exists($livre['photo_url'])) {
+                                unlink($livre['photo_url']);
+                            }
+                            $photo_url = $upload_path;
+                        }
+                    }
+                }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Récupérez les données du formulaire de modification
-    $title = $_POST['title'];
-    $author = $_POST['author'];
-    $description = $_POST['description'];
-    $date_publication = $_POST['date_publication'];
-    $isbn = $_POST['isbn'];
-    $coverUrl = $_POST['cover_url']; 
+                // Mise à jour dans la base de données
+                $query = "UPDATE livres SET 
+                         titre = :titre,
+                         auteur = :auteur,
+                         isbn = :isbn,
+                         date_publication = :date_publication,
+                         description = :description,
+                         statut = :statut,
+                         photo_url = :photo_url
+                         WHERE id = :id";
+                
+                $stmt = $pdo->prepare($query);
+                $stmt->execute([
+                    ':titre' => $titre,
+                    ':auteur' => $auteur,
+                    ':isbn' => $isbn,
+                    ':date_publication' => $date_publication,
+                    ':description' => $description,
+                    ':statut' => $statut,
+                    ':photo_url' => $photo_url,
+                    ':id' => $id
+                ]);
 
-    // Mettez à jour les détails du livre dans la base de données
-    $updateQuery = "UPDATE livres SET titre = :title, auteur = :author, description = :description, date_publication = :date_publication, isbn = :isbn, photo_url = :cover_url WHERE id = :book_id";
-    $updateStmt = $pdo->prepare($updateQuery);
-    $updateStmt->execute(array(
-        ':title' => $title,
-        ':author' => $author,
-        ':description' => $description,
-        ':date_publication' => $date_publication,
-        ':isbn' => $isbn,
-          ':cover_url' => $coverUrl,
-        ':book_id' => $book_id
-    ));
-
-    // Redirigez l'utilisateur vers la page de détails du livre mis à jour ou une autre page appropriée.
-    header('Location: book_details.php?id=' . $book_id);
-
-    exit();
+                $message = 'Le livre a été modifié avec succès.';
+                $type_message = 'success';
+                
+                // Mettre à jour les données du livre affichées
+                $livre = array_merge($livre, [
+                    'titre' => $titre,
+                    'auteur' => $auteur,
+                    'isbn' => $isbn,
+                    'date_publication' => $date_publication,
+                    'description' => $description,
+                    'statut' => $statut,
+                    'photo_url' => $photo_url
+                ]);
+            } catch (PDOException $e) {
+                $message = 'Erreur lors de la modification du livre.';
+                $type_message = 'error';
+            }
+        }
+    }
 }
+
+$page_title = "Modifier un Livre";
+include 'includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Modifier un Livre</title>
-    <link rel="stylesheet" type="text/css" href="css/style.css">
-</head>
-<body>
-<header>
-        <h1>Modifier un livre - Librairie XYZ</h1>
-    </header>
-    <form method="post">
-        <label for="title">Titre :</label>
-        <input type="text" name="title" value="<?php echo $book['titre']; ?>" required>
-        <br>
-        <label for="author">Auteur :</label>
-        <input type="text" name="author" value="<?php echo $book['auteur']; ?>" required>
-        <br>
-        <label for="description">Description :</label>
-        <textarea name="description" required><?php echo $book['description']; ?></textarea>
-        <br>
-        <label for="date_publication">Date de Publication :</label>
-        <input type="date" name="date_publication" value="<?php echo $book['date_publication']; ?>" required>
-        <br>
-        <label for="isbn">ISBN :</label>
-        <input type="text" name="isbn" value="<?php echo $book['isbn']; ?>" required>
-        <br>
-        <label for="cover_url">URL de l'image :</label>
-        <input type="text" name="cover_url" value="<?= htmlspecialchars($book['photo_url']); ?>" required>
-        <br>
-        <button type="submit">Enregistrer les Modifications</button>
-    </form>
-    <button onclick="window.location.href ='books.php'">Retour à la Liste des Livres</a>
-</body>
-</html>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Modifier un Livre</h2>
+                </div>
+                <div class="card-body">
+                    <?php if ($message): ?>
+                        <div class="alert alert-<?php echo $type_message === 'error' ? 'danger' : 'success'; ?>">
+                            <?php echo $message; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="titre" class="form-label">Titre *</label>
+                            <input type="text" class="form-control" id="titre" name="titre" value="<?php echo htmlspecialchars($livre['titre']); ?>" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="auteur" class="form-label">Auteur *</label>
+                            <input type="text" class="form-control" id="auteur" name="auteur" value="<?php echo htmlspecialchars($livre['auteur']); ?>" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="isbn" class="form-label">ISBN *</label>
+                            <input type="text" class="form-control" id="isbn" name="isbn" value="<?php echo htmlspecialchars($livre['isbn']); ?>" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="date_publication" class="form-label">Date de publication</label>
+                            <input type="date" class="form-control" id="date_publication" name="date_publication" value="<?php echo htmlspecialchars($livre['date_publication']); ?>">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"><?php echo htmlspecialchars($livre['description']); ?></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="statut" class="form-label">Statut</label>
+                            <select class="form-select" id="statut" name="statut">
+                                <option value="disponible" <?php echo $livre['statut'] === 'disponible' ? 'selected' : ''; ?>>Disponible</option>
+                                <option value="emprunté" <?php echo $livre['statut'] === 'emprunté' ? 'selected' : ''; ?>>Emprunté</option>
+                                <option value="en réparation" <?php echo $livre['statut'] === 'en réparation' ? 'selected' : ''; ?>>En réparation</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="photo" class="form-label">Photo du livre</label>
+                            <?php if (!empty($livre['photo_url'])): ?>
+                                <div class="mb-2">
+                                    <img src="<?php echo htmlspecialchars($livre['photo_url']); ?>" alt="Photo actuelle" class="img-thumbnail" style="max-width: 200px;">
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="captcha" class="form-label">Code de sécurité :</label>
+                            <div class="d-flex flex-column gap-2">
+                                <img src="includes/captcha.php" alt="CAPTCHA" class="border rounded" style="height: 60px; width: 200px; object-fit: contain;" id="captchaImage">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="text" class="form-control" id="captcha" name="captcha" required>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('captchaImage').src='includes/captcha.php?'+Math.random()">
+                                        Rafraîchir
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-text">Entrez le code affiché dans l'image</div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Modifier le livre</button>
+                            <a href="books.php" class="btn btn-secondary">Retour à la liste</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php include 'includes/footer.php'; ?>

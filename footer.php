@@ -1,7 +1,5 @@
 <footer>
-    <div class="container">
-        <p>&copy; <?= date("Y"); ?> Librairie XYZ</p>
-    </div>
+    <p>&copy; <?php echo date("Y"); ?> LibraGuard</p>
 </footer>
 </body>
 </html>

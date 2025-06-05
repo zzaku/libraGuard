@@ -3,103 +3,139 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require('config.php');
+require_once('config.php');
+require_once('includes/functions.php');
+
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: login.php');
-    exit();
+if (!estConnecte() || !estAdmin()) {
+    rediriger('login.php', 'Vous devez être administrateur pour accéder à cette page.', 'error');
 }
 
-$errors = [];
-$success = false;
+$message = '';
+$type_message = '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Collectez les données du formulaire
-    $title = $_POST['title'];
-    $author = $_POST['author'];
-    $description = $_POST['description'];
-    $date_publication = $_POST['date_publication'];
-    $isbn = $_POST['isbn'];
-    $coverPath = $_POST['cover'];  // Assurez-vous que la clé correspond au nom du champ de formulaire
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Vérification du CAPTCHA
+    if (!isset($_POST['captcha']) || !verifierCaptcha($_POST['captcha'])) {
+        $message = 'Le CAPTCHA est incorrect.';
+        $type_message = 'error';
+    } else {
+        $titre = nettoyer($_POST['titre']);
+        $auteur = nettoyer($_POST['auteur']);
+        $isbn = nettoyer($_POST['isbn']);
+        $date_publication = nettoyer($_POST['date_publication']);
+        $description = nettoyer($_POST['description']);
+        $statut = nettoyer($_POST['statut']);
 
-    // Effectuez des validations (assurez-vous que les données sont correctes)
-    if (empty($title)) {
-        $errors[] = "Le titre du livre est requis.";
-    }
-    if (empty($date_publication)) {
-        $errors[] = "La date de publication est requise.";
-    }
-    if (empty($isbn)) {
-        $errors[] = "ISBN est requis.";
-    }
-    // Ajoutez d'autres validations ici...
+        if (empty($titre) || empty($auteur) || empty($isbn)) {
+            $message = 'Tous les champs obligatoires doivent être remplis.';
+            $type_message = 'error';
+        } else {
+            try {
+                $photo_url = '';
+                if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+                    $photo_url = uploadImage($_FILES['photo']);
+                }
 
-    // Si aucune erreur de validation n'est présente
-    if (empty($errors)) {
-        $query = "INSERT INTO livres (titre, auteur, description, date_publication, isbn, photo_url) VALUES (:title, :author, :description, :date_publication, :isbn, :photo_url)";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute(array(
-            ':title' => $title,
-            ':author' => $author,
-            ':description' => $description,
-            ':date_publication' => $date_publication,
-            ':isbn' => $isbn,
-            ':photo_url' => $coverPath,
-        ));
-
-        // Indiquez que l'ajout du livre a réussi
-        $success = true;
+                if (ajouterLivre($pdo, $titre, $auteur, $isbn, $date_publication, $description, $statut, $photo_url)) {
+                    $message = 'Le livre a été ajouté avec succès.';
+                    $type_message = 'success';
+                } else {
+                    $message = 'Erreur lors de l\'ajout du livre.';
+                    $type_message = 'error';
+                }
+            } catch (PDOException $e) {
+                $message = 'Erreur lors de l\'ajout du livre.';
+                $type_message = 'error';
+            }
+        }
     }
 }
 
+$page_title = "Ajouter un Livre";
+include 'includes/header.php';
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Ajouter un Livre</title>
-    <link rel="stylesheet" type="text/css" href="css/style.css">
-</head>
-<body>
-<header>
-        <img class="logo" src="image/logo.png" alt="Logo Librairie XYZ">
-        <h1>Ajouter un livre - Librairie XYZ</h1>
-    </header>
 
-    <?php if ($success) : ?>
-        <p>Le livre a été ajouté avec succès.</p>
-        <button onclick="window.location.href = 'books.php'">Retour à la gestion des livres </button>
-    <?php else : ?>
-        <?php if (!empty($errors)) : ?>
-            <ul>
-                <?php foreach ($errors as $error) : ?>
-                    <li><?= $error ?></li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Ajouter un Livre</h2>
+                </div>
+                <div class="card-body">
+                    <?php if ($message): ?>
+                        <div class="alert alert-<?php echo $type_message === 'error' ? 'danger' : 'success'; ?>">
+                            <?php echo $message; ?>
+                        </div>
+                    <?php endif; ?>
 
-        <form method="post">
-            <label for="cover">URL de l'image :</label>
-            <input type="text" name="cover" required>
-            <label for="title">Titre :</label>
-            <input type="text" name="title" required>
-            <br>
-            <label for="author">Auteur :</label>
-            <input type="text" name="author" required>
-            <br>
-            <label for="description">Description :</label>
-            <textarea name="description" required></textarea>
-            <br>
-            <label for="date_publication">Date de Publication :</label>
-            <input type="date" name="date_publication" required>
-            <br>
-            <label for="isbn">ISBN :</label>
-            <input type="text" name="isbn" required>
-            <br>
-            <button type="submit">Ajouter le Livre</button>
-        </form>
-    <?php endif; ?>
-</body>
-</html>
+                    <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="titre" class="form-label">Titre *</label>
+                            <input type="text" class="form-control" id="titre" name="titre" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="auteur" class="form-label">Auteur *</label>
+                            <input type="text" class="form-control" id="auteur" name="auteur" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="isbn" class="form-label">ISBN *</label>
+                            <input type="text" class="form-control" id="isbn" name="isbn" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="date_publication" class="form-label">Date de publication</label>
+                            <input type="date" class="form-control" id="date_publication" name="date_publication">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="statut" class="form-label">Statut</label>
+                            <select class="form-select" id="statut" name="statut">
+                                <option value="disponible">Disponible</option>
+                                <option value="emprunté">Emprunté</option>
+                                <option value="en réparation">En réparation</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="photo" class="form-label">Photo du livre</label>
+                            <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="captcha" class="form-label">Code de sécurité :</label>
+                            <div class="d-flex flex-column gap-2">
+                                <img src="includes/captcha.php" alt="CAPTCHA" class="border rounded" style="height: 60px; width: 200px; object-fit: contain;" id="captchaImage">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="text" class="form-control" id="captcha" name="captcha" required>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('captchaImage').src='includes/captcha.php?'+Math.random()">
+                                        Rafraîchir
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-text">Entrez le code affiché dans l'image</div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Ajouter le livre</button>
+                            <a href="books.php" class="btn btn-secondary">Retour à la liste</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php include 'includes/footer.php'; ?>
