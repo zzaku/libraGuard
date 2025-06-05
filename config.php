@@ -4,10 +4,10 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 
-$host = 'Adresse de la base de donnée';
-$dbname = 'Nom de la base de donnée';
-$username = 'Nom de l\'utilisateur';
-$password = 'mot de passe utilisateur';
+$host = '127.0.0.1:3306';
+$dbname = 'LibraGuard';
+$username = 'root';
+$password = '';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
