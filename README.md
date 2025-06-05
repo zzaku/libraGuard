@@ -1,35 +1,40 @@
-# evaluation-librairie
+# LibraGuard
 
-**README - Initialisation du Projet en Local**
+## Description
+LibraGuard est une application de gestion de bibliothèque qui permet aux utilisateurs de gérer les livres, les emprunts, et les utilisateurs. Elle offre des fonctionnalités pour les administrateurs et les utilisateurs standard.
 
-Bienvenue dans le projet de l'application de gestion de librairie. Suivez ces étapes pour initialiser l'application sur votre machine locale.
+## Fonctionnalités
+- **Gestion des livres** : Ajout, modification, suppression, et consultation des livres.
+- **Gestion des emprunts** : Emprunt et retour de livres, suivi des emprunts en cours et en retard.
+- **Gestion des utilisateurs** : Inscription, connexion, et gestion des rôles utilisateur.
+- **Interface administrateur** : Gestion des utilisateurs et des livres.
 
----
+## Prérequis
+- PHP 7.4 ou supérieur
+- MySQL 5.7 ou supérieur
+- Serveur web (Apache, Nginx, etc.)
 
-### Initialisation du Projet en Local
+## Installation
+1. Clonez le dépôt :
+   ```bash
+   git clone https://github.com/votre-utilisateur/libraGuard.git
+   ```
 
-1. **Cloner le Dépôt :**
-   - Utilisez la commande suivante pour cloner le dépôt :
-     ```bash
-     git clone https://github.com/Andragogy-FR/evaluation-librairie---Sujet-2
-     ```
+2. Configurez votre serveur web pour pointer vers le répertoire du projet.
 
-2. **Configuration de la Base de Données :**
-   - Exécutez les scripts SQL du dossier evaluation-librairie/SQL/library.sql pour créer les tables nécessaires de votre base de donnée.
+3. Importez la base de données :
+   ```bash
+   mysql -u votre_utilisateur -p < SQL/database.sql
+   ```
 
-3. **Configuration du Backend :**
-   - Configurez les paramètres de la base de données dans le fichier `config.php`.
+4. Configurez le fichier `config.php` avec vos informations de base de données.
 
-4. **Lancer l'Application :**
-   - Démarrez le serveur PHP intégré :
-     ```bash
-     cd nom-du-depot
-     php -S localhost:8000
-     ```
+5. Accédez à l'application via votre navigateur.
 
-     OU
+## Utilisation
+- **Connexion** : Utilisez les identifiants par défaut pour l'administrateur (admin@libraguard.com / admin123).
+- **Gestion des livres** : Ajoutez, modifiez, ou supprimez des livres via l'interface administrateur.
+- **Emprunts** : Les utilisateurs peuvent emprunter et retourner des livres via l'interface utilisateur.
 
-Accédez à l'application en démarrant MAMP, WAMP, XAMP, AMPPS, LARAVEL ou autre.
-
-5. **Accéder à l'Application :**
-   - Ouvrez votre navigateur et allez à [http://localhost:8000](http://localhost:8000).                    
+## Contribution
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou à soumettre une pull request.
